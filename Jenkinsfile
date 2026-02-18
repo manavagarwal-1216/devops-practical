@@ -25,10 +25,12 @@ pipeline {
             }
         }
 
-        stage('Stop Old Container') {
+        stage('Stop All Running Containers') {
             steps {
-                bat "docker stop %CONTAINER_NAME% || exit 0"
-                bat "docker rm %CONTAINER_NAME% || exit 0"
+                bat '''
+                for /f "tokens=*" %%i in ('docker ps -q') do docker stop %%i
+                for /f "tokens=*" %%i in ('docker ps -aq') do docker rm %%i
+                '''
             }
         }
 
@@ -40,7 +42,7 @@ pipeline {
 
         stage('Verify Deployment') {
             steps {
-                echo "Application deployed at http://localhost:${APP_PORT}"
+                echo "Application available at http://localhost:${APP_PORT}"
             }
         }
     }
