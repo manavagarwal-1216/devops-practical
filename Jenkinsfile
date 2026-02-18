@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    triggers {
+        // Automatically check GitHub for changes every minute
+        pollSCM('* * * * *')
+    }
+
     environment {
         IMAGE_NAME = "devops-app"
         CONTAINER_NAME = "devops-container"
@@ -26,35 +31,37 @@ pipeline {
 
         stage('Stop & Remove Old Container') {
             steps {
-                echo "Stopping old container if it exists"
-                sh """
-                   docker stop ${CONTAINER_NAME} || true
-                   docker rm ${CONTAINER_NAME} || true
-                """
+                echo "Stopping old container if exists"
+                sh "docker stop ${CONTAINER_NAME} || true"
+                sh "docker rm ${CONTAINER_NAME} || true"
             }
         }
 
         stage('Run New Container') {
             steps {
-                echo "Running new container"
+                echo "Starting new container"
                 sh """
-                   docker run -d \
-                   --name ${CONTAINER_NAME} \
-                   -p ${APP_PORT}:${APP_PORT} \
-                   ${IMAGE_NAME}
+                docker run -d \
+                --name ${CONTAINER_NAME} \
+                -p ${APP_PORT}:${APP_PORT} \
+                ${IMAGE_NAME}
                 """
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                echo "Application should now be accessible at http://localhost:${APP_PORT}"
             }
         }
     }
 
     post {
         success {
-            echo "✅ Application deployed successfully"
-            echo "🌐 Access app at: http://localhost:5000"
+            echo "✅ Deployment successful"
         }
-
         failure {
-            echo "❌ Pipeline failed. Check logs."
+            echo "❌ Deployment failed. Check logs."
         }
     }
 }
