@@ -15,28 +15,42 @@ pipeline {
 
         stage('Source Code Ready') {
             steps {
-                echo "Code already checked out from GitHub by Jenkins"
+                echo 'Code already checked out by Jenkins'
             }
         }
 
         stage('Build Docker Image (No Cache)') {
             steps {
-                echo "Building Docker image"
-                sh "docker build --no-cache -t ${IMAGE_NAME} ."
+                bat "docker build --no-cache -t %IMAGE_NAME% ."
             }
         }
 
-        stage('Stop & Remove Old Container') {
+        stage('Stop Old Container') {
             steps {
-                echo "Stopping old container (if any)"
-                sh "docker stop ${CONTAINER_NAME} || true"
-                sh "docker rm ${CONTAINER_NAME} || true"
+                bat "docker stop %CONTAINER_NAME% || exit 0"
+                bat "docker rm %CONTAINER_NAME% || exit 0"
             }
         }
 
         stage('Run New Container') {
             steps {
-                echo "Starting new container"
-                sh """
-                docker run -d ^
-                --name ${CONTAINE
+                bat "docker run -d --name %CONTAINER_NAME% -p %APP_PORT%:%APP_PORT% %IMAGE_NAME%"
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                echo "Application deployed at http://localhost:${APP_PORT}"
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Deployment successful'
+        }
+        failure {
+            echo '❌ Deployment failed'
+        }
+    }
+}
